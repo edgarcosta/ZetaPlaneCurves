@@ -1,4 +1,3 @@
-freeze;
 /***********************************************************************************************
 
   ZetaPlaneCurves.
@@ -46,7 +45,7 @@ function NormalizationCorrections(f, up_to_r)
     for fac in Factorisation(H) do
       pol, mul := Explode(fac);
       // I only wrote the code to handle nodes at the moment
-      assert mul eq 1;
+      assert mul le 2;
       deg := Degree(pol);
       K<a> := GF(p^deg);
       Ku<u> := PolynomialRing(K);
@@ -94,6 +93,15 @@ function NormalizationCorrections(f, up_to_r)
       end if;
     end if;
   end for;
+  // for last the point (0,1,0)
+  FatP := Evaluate(f, [lx, 1, ly]);
+  if MonomialCoefficient(FatP, lx) eq 0 and MonomialCoefficient(FatP, ly) eq 0 then
+    FatPdegree2 := MonomialCoefficient(FatP, lx^2) * lx^2;
+    FatPdegree2 +:= MonomialCoefficient(FatP, ly^2) * ly^2;
+    FatPdegree2 +:= MonomialCoefficient(FatP, lx * ly) * lx * ly;
+    normal_deg := (3 - #Factorisation(FatPdegree2)) * deg;
+    Append(~singular_points, <[0, 1, 0], deg, normal_deg>);
+  end if;
   // now compute the corrections
   corrections := [0 : _ in [1..up_to_r]];
   for pt in singular_points do
@@ -111,17 +119,6 @@ function NormalizationCorrections(f, up_to_r)
   end for;
   return corrections;
 end function;
-
-// returns the LPolynomial of f(x,y,z)=0 wth f homogeneous in GF(p)[x,y,z]
-function ZetaPlaneCurve(f)
-  return LPolynomial(Curve(ProjectiveSpace(Parent(f)), f));
-end function;
-
-// return the LPolynomial of f(x,y,z)=0 mod p with f homogeneous in Z[x,y,z]
-function ZetaPlaneCurveMod(f, p)
-  return ZetaPlaneCurve(ChangeRing(f, GF(p)));
-end function;
-
 
 // Counts points on f(x,y,z)=0 with one or more of the coordinates zero
 // by Andrew V. Sutherland
@@ -219,7 +216,7 @@ intrinsic LPolynomial(f :: RngMPolElt: KnownFactor := false, corrections := fals
   e := Ceiling(Log(p,2*g*p^(up_to_r/2)));
   require p gt 1 : "p is too small"; // only implemented the simpler version of the trace formula
   // Compute M_s for s in [0..e]
-  time Ms := mats(f, p, e);
+  Ms := mats(f, p, e);
   tmodpe := [p^r+1-Integers()!points_trace_formula(f, p, r, e : Ms:=Ms) - corrections[r]
     : r in [1..up_to_r]];
   lift := func<m, n| 2*a gt n select a-n else a where a:= (m mod n)>;
