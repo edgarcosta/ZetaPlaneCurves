@@ -10,6 +10,7 @@ This package defines the following intrinsics:
 
 
 For genus at least 3 and moderate prime should outperform Magma under generic conditions.
+
 The current implementation computes f^(p-1) and its powers in a naive fashion.
 This takes about p^(2 + o(1)) deg(f)^(g/2 + o(1))) time and space, which makes this algorithm unpractical for large characteristic.
 
@@ -48,7 +49,7 @@ Time: 1.340
 418227202051*T^10 + 47570866584*T^9 + 4048784261*T^8 + 235070880*T^7 + 25301854*T^6 + 1763856*T^5 + 119914*T^4 + 5280*T^3 + 431*T^2 + 24*T + 1
 Time: 6.600
 ```
-In this case, since the defining polynomial is quite sparse, one may even consider significantly larger.
+In this case, since the defining polynomial is quite sparse, one may even consider significantly larger primes.
 Here are some timings:
 ```
 > time LPolynomial(f, 307);
