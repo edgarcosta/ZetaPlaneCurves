@@ -26,7 +26,7 @@ this package is part of [CHIMP](https://github.com/edgarcosta/CHIMP/).
 
 ## Genus 5, degree 8
 
-X is a genus 5 curve that is a quartic cover of the elliptic curve with [LMFDB]((https://www.lmfdb.org) label [65.a1](https://www.lmfdb.org/EllipticCurve/Q/65/a/1)
+X is a genus 5 curve that is a quartic cover of the elliptic curve with [LMFDB](https://www.lmfdb.org) label [65.a1](https://www.lmfdb.org/EllipticCurve/Q/65/a/1) and Cremona label 65a1.
 ```
 > R<a,b,c> := PolynomialRing(Integers(), 3);
 > f := 12352*a^8 - 15792*a^7*b + 93440*a^7*c - 479*a^6*b^2 - 33520*a^6*b*c + 85696*a^6*c^2 + 1691*a^5*b^3 - 49410*a^5*b^2*c + 169000*a^5*b*c^2 - 303680*a^5*c^3 + 1507*a^4*b^4 - 4740*a^4*b^3*c + 4983*a^4*b^2*c^2 - 176880*a^4*b*c^3 + 352352*a^4*c^4 + 595*a^3*b^5 - 2928*a^3*b^4*c + 12401*a^3*b^3*c^2 - 10758*a^3*b^2*c^3 + 9410*a^3*b*c^4 - 238720*a^3*c^5 + 124*a^2*b^6 + 674*a^2*b^5*c + 812*a^2*b^4*c^2 - 17094*a^2*b^3*c^3 + 43019*a^2*b^2*c^4 + 90590*a^2*b*c^5 + 122600*a^2*c^6 - a*b^7 + 262*a*b^6*c - 1173*a*b^5*c^2 + 2342*a*b^4*c^3 + 1815*a*b^3*c^4 - 45420*a*b^2*c^5 - 63450*a*b*c^6 - 39000*a*c^7 + 3*b^8 + 48*b^7*c - 116*b^6*c^2 + 616*b^5*c^3 + 172*b^4*c^4 + 3240*b^3*c^5 + 11900*b^2*c^6 + 12000*b*c^7 + 5625*c^8;
@@ -84,7 +84,7 @@ Time: 87.190
 
 
 ## Genus 5, degree 6
-Y is a genus 5 curve that is a quartic cover of the elliptic curve with [LMFDB]((https://www.lmfdb.org) label [330.b2](https://beta.lmfdb.org/EllipticCurve/Q/330/b/2) (Cremona label 330e2)
+Y is a genus 5 curve that is a quartic cover of the elliptic curve with [LMFDB](https://www.lmfdb.org) label [330.b2](https://beta.lmfdb.org/EllipticCurve/Q/330/b/2) and Cremona label 330e2.
 ```
 //genus 5 curve that is a quartic cover of the elliptic curve 330e2
 > g := 900*a^6 - 8236*a^4*c^2 + 784*a^3*b^2*c + 11*a^2*b^4 + 1228*a^2*c^4 - 16*a*b^2*c^3 - 11*b^4*c^2 - 36*c^6;
