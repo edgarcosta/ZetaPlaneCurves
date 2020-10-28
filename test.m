@@ -24,7 +24,7 @@ time assert Coefficients(LPolynomial(g, 17)) eq [1, 4, 17, 72, 393, 2774, 6681, 
 print "Passed!\n";
 
 
-print "Testing genus 5 degree 4 cover of the elliptic curve 330e2";
+print "Testing genus 5 curve that is a quartic cover of the elliptic curve 330e2";
 h := 900*a^6 - 8236*a^4*c^2 + 784*a^3*b^2*c + 11*a^2*b^4 + 1228*a^2*c^4 - 16*a*b^2*c^3 - 11*b^4*c^2 - 36*c^6;
 E := EllipticCurve("330e2");
 for p in [19, 107, 211] do
@@ -52,7 +52,7 @@ for p in PrimesInInterval(7, 20) do
     P<x,y,z> := ProjectivePlane(GF(p));
     for d in [3..6] do
         maxg := Min((d-1)*(d-2) div 2, 6);
-        if p ge 17
+        if p ge 17 then
           maxg := Min(maxg, 5);
         end if;
         for g in [1..maxg] do
