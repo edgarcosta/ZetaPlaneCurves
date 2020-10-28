@@ -1,6 +1,6 @@
 # ZetaPlaneCurves
 
-Computes L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in P^3_Q, where C has at most nodal singularities.
+Computes L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in the projective plane, where C has at most nodal singularities.
 The L-polynomial is obtained by point counts of normalisation, deduced from the point counts on the plane model obtained via Harvey's trace formula, Theorem 3.1 in "Computing zeta functions of arithmetic schemes".
 
 
