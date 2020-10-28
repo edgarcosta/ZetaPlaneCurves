@@ -80,6 +80,46 @@ function TracesToLPolynomial(ts, p, g: KnownFactor:=1)
 end function;
 
 
+function TracesToLPolynomial(ts, p, prec)
+  lift := func<m, n| 2*a gt n select a-n else a where a:= (Integers()!m mod n)>;
+  R := Integers(p^prec);
+  // first reduce them mod p^e
+  // then lift them to ZZ
+  ts := ChangeUniverse(ts, R);
+  g := #ts;
+  // as if we had computed the characteristic polynomial modulo p^e
+  // must apply PowerSumsToPolynomial over ZZ
+  e := Coefficients(Reverse(PowerSumsToPolynomial(ChangeUniverse(ts, Integers()))));
+  // convert to elementary symmetric and drop the first element
+  e := [* k lt #e select (-1)^k * Integers()!R!e[k+1] else 0: k in [1..g] *];
+  s := [*0 : _ in e*];
+  // lift the trace
+  e[1] := lift(e[1], Modulus(R));
+  s[1] := e[1];
+  res := [0 : i in [0..2*g]];
+  res[1] := 1;
+  res[2*g+1] := p^g;
+  res[2] := -e[1];
+  res[2*g] := res[2]*p^(g-1);
+  for k in [2..g] do
+    // assume that s[i] and e[i] are correct for i < k
+    // thus S = sum (-1)^i e[k-i] * s[i] is correct
+    S := &+[(-1)^i * e[k - i] * s[i] : i in [1..k-1]];
+    // and e[k] is correct mod p^e
+    // s[k] = (-1)^(k-1) (k*e[k] + S) ==> (-1)^(k-1) s[k] - S = k*e[k]
+    // hence s[k] is correct modulo k*p^e
+    s[k] := lift((-1)^(k - 1) * (S + k * e[k]), k*Modulus(R));
+    // now correct e[k] with:
+    // (-1)^(k-1) s[k] - S = k*e[k];
+    e[k] := (-S + (-1)^(k - 1) * s[k]) div k;
+    res[k+1] := (-1)^k * e[k];
+    res[2*g - k + 1] := res[k+1]*p^(g-k);
+  end for;
+  ZZT<T> := PolynomialRing(Integers());
+  return ZZT!res;
+end function;
+
+
 
 // Compute the matrices A_{F^s} = M_s mod p^e (a=1) for s in [0..e], via Lemma 3.2 using brute force
 // The dimension of the returned matrices is Binomial(d*s+2,2), where d=Degree(f)
@@ -153,6 +193,7 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) ->
   require not IsDivisibleBy(Degree(f), p) : "p divides the degree of f"; // possible to work around
   C := Curve(ProjectiveSpace(R3), f);
   g := Genus(Curve(ProjectiveSpace(Parent(f)), f));
+  require not IsDivisibleBy(g, p) : "p divides the genus of C"; // possible to work around
   if KnownFactor cmpeq false then KnownFactor := PolynomialRing(Integers())!1; end if;
   up_to_r := (2*g - Degree(KnownFactor)) div 2;
   vprint ZetaPlaneCurve, 1: "Using up_to_r = ", up_to_r;
@@ -165,6 +206,7 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) ->
   vprint ZetaPlaneCurve, 1: "corrections = ", corrections;
   // one could decrease 2*g to 2*up_to_r by correcting the point counts with known factor and just computing the unkown factor
   e := Ceiling(Log(p,4*up_to_r*p^(up_to_r/2)));
+  e := Max([Ceiling(Log(p,4*up_to_r*p^(r/2)/r)) : r in [1..up_to_r]]);
   vprint ZetaPlaneCurve, 1: "Using prec = ", e;
   require p gt 1 : "p is too small"; // only implemented the simpler version of the trace formula
   // Compute M_s for s in [0..e]
@@ -176,9 +218,7 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) ->
     - corrections[r]
     - Trace(KnownFrob^r)
     : r in [1..up_to_r]];
-  lift := func<m, n| 2*a gt n select a-n else a where a:= (m mod n)>;
-  t := [lift(elt, p^e) : elt in tmodpe];
-  return TracesToLPolynomial(t, p, up_to_r) * KnownFactor;
+  return TracesToLPolynomial(tmodpe, p, e) * KnownFactor;
 end intrinsic;
 
 
