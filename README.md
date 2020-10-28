@@ -61,6 +61,9 @@ Time: 0.390
 > time LPolynomial(f, 53: KnownFactor:=EulerFactor(EllipticCurve("65a1"), 53));
 418195493*T^10 + 15780962*T^9 + 12654545*T^8 + 719104*T^7 + 22790*T^6 + 16028*T^5 + 430*T^4 + 256*T^3 + 85*T^2 + 2*T + 1
 Time: 1.350
+> time LPolynomial(f, 109: KnownFactor:=EulerFactor(EllipticCurve("65a1"), 109));
+15386239549*T^10 - 846948966*T^9 + 99717233*T^8 + 3801920*T^7 - 1365770*T^6 + 129772*T^5 - 12530*T^4 + 320*T^3 + 77*T^2 - 6*T + 1
+Time: 4.260
 ```
 Magma does not handle p = 11 or 17 and struggles with 19.
 ```

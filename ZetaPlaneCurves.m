@@ -4,7 +4,7 @@
 
   Computes LPolynomial of plane curves, potentially singular.
 
-  Code is base on Theorem 3.1 of D. Harvey's "Computing zeta functions of arithmetic schemes"
+  Code is based on Theorem 3.1 of D. Harvey's "Computing zeta functions of arithmetic schemes"
 
   intrinsics in this file:
 
