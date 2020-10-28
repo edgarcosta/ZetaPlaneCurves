@@ -8,8 +8,8 @@
 
   intrinsics in this file:
 
-  - LPolynomial(f :: RngMPolElt[FldFin]: KnownFactor := false, corrections := false) -> RngUPolElt
-  - LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
+    - LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
+    - LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
 
 
   Edgar Costa, 2020
@@ -141,9 +141,9 @@ function points_trace_formula(f, p, r, e : Ms:=[])
 end function;
 
 // Computes the zeta function of f(x,y,z) = 0 over Fp
-intrinsic LPolynomial(f :: RngMPolElt: KnownFactor := false, corrections := false) -> RngUPolElt
+intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
 {
-  The L-polynomial of the of the projective normalisation of the curve C defined by the zero locus of f in P^3_Q, where C has at most nodal singularities.
+  The L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in P^3_Q, where C has at most nodal singularities.
   The L-polynomial is obtained by point counts of normalisation, deduced from the point counts on the plane model obtained via Harvey's trace formula, Theorem 3.1 in "Computing zeta functions of arithmetic schemes". where the matrices are computed in a naive fashion.
   }
   R3 := Parent(f);
