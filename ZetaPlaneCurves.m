@@ -1,3 +1,4 @@
+freeze;
 /***********************************************************************************************
 
   ZetaPlaneCurves.
@@ -16,10 +17,14 @@
 ***********************************************************************************************/
 
 declare verbose ZetaPlaneCurve, 2;
+
+
+
 // Given f defining a plane curve in P2
 // computes the diferences of point counts between the plane model and its normalisation for GF(p^r)
 // at the moment we only support nodal singularities
-function NormalizationCorrections(f, up_to_r)
+function NodalCorrections(f, up_to_r)
+  t0 := Cputime();
   corrections := [0 : _ in [1..up_to_r]];
   R3 := Parent(f);
   assert Rank(R3) eq 3;
@@ -57,8 +62,90 @@ function NormalizationCorrections(f, up_to_r)
       end if;
     end for;
   end for;
+  vprint ZetaPlaneCurve, 1: "NodalCorrections time:", Cputime() - t0;
   return corrections;
 end function;
+
+
+// Given a divisor counts the number of points on its cluster over various base extensions
+function points_divisor(D, up_to_r)
+  p := Characteristic(BaseRing(Curve(D)));
+  CD := [Cluster(elt) : elt in Support(D)];
+  AS := AmbientSpace(Curve(D));
+  return Vector([#Set(Flat(
+    [ [ASi!Coordinates(pt): pt in Points(ChangeRing(elt, F))] : elt in CD ]
+    )) where ASi := ChangeRing(AS, F) where F := GF(p^i)
+    : i in [1..up_to_r]]);
+end function;
+// Given a plane curve in P2 and its canonical image
+// computes the diferences of point counts between the plane model and its normalisation for GF(p^r)
+// this can be quite expensive!
+function GenericCorrections(C, CM, up_to_r)
+  t0 := Cputime();
+  SC := SingularSubscheme(C);
+  PC := Divisor(C, SC);
+  // the direction is important
+  t1 := Cputime();
+  b, iso := IsIsomorphic(CM, C);
+  vprint ZetaPlaneCurve, 1: "isomorphism time: ", Cputime() - t1;
+  t1 := Cputime();
+  PM := Pullback(iso, PC);
+  vprint ZetaPlaneCurve, 1: "pullback time: ", Cputime() - t1;
+  // We would like to do this, but it is to slow
+  //corrections := [#Points(ChangeRing(Y, GF(p^i))) - #Points(ChangeRing(X, GF(p^i)))
+  //  : i in [1..up_to_r]] where X := SC where Y := Cluster(PM);
+  t1 := Cputime();
+  PM_counts := points_divisor(PM, up_to_r);
+  vprint ZetaPlaneCurve, 1: "point counts on the pullback time:", Cputime() - t1;
+  t1 := Cputime();
+  p := Characteristic(BaseRing(Curve(C)));
+  corrections := [PM_counts[i] - #Points(ChangeRing(SC, GF(p^i))) : i in  [1..up_to_r]];
+  vprint ZetaPlaneCurve, 1: "point counts on singular subscheme time::", Cputime() - t1;
+  vprint ZetaPlaneCurve, 1: "GenericCorrections time:", Cputime() - t0;
+  return corrections;
+end function;
+
+
+// auxiliar functions to find  a new plane model with only nodal singularities
+function RandomPoint(P)
+  affine_chart := Random(Integers(Dimension(P)));
+  return P![i eq affine_chart select 1 else Random(BaseRing(P)) : i in [0..Dimension(P)]];
+end function;
+function RandomProjection(X)
+  P := AmbientSpace(X);
+  g := Genus(X);
+  newg := -1;
+  for k in [1..100] do
+    Y, proj := Projection(X, RandomPoint(AmbientSpace(X)));
+    Y := Curve(Y);
+    newg := Genus(Y);
+    if g eq newg then
+      return Y, proj;
+    end if;
+  end for;
+  return false, false;
+end function;
+function RandomPlaneModel(X)
+  Y, proj := RandomProjection(X);
+  while Dimension(AmbientSpace(Y)) ne 2 do
+    Y, proj0 := RandomProjection(Y);
+    proj := proj*proj0;
+  end while;
+  return Y, proj;
+end function;
+// Find a new plane model with only nodal singularities
+// X should be the image of the canonical map
+function FindNewPlaneNodalModel(X, tries)
+  for _ in [1..tries] do
+    Y := RandomPlaneModel(X);
+    if IsNodalCurve(Y) then
+      return Y;
+    end if;
+  end for;
+  return false;
+end function;
+
+
 
 // Counts points on f(x,y,z)=0 with one or more of the coordinates zero
 // by Andrew V. Sutherland
@@ -138,6 +225,7 @@ function mats(f, p, e)
       Append(~fp1s, fp1s[k1 + 1]*fp1s[k2 + 1]);
     end for;
     assert #fp1s eq e + 1;
+    vprint ZetaPlaneCurve, 1: "Powering time:", Cputime() - t0;
 
 
     // list of exponent vectors of monomial basis for R[x,y,z]_(d*s)
@@ -157,7 +245,11 @@ function mats(f, p, e)
                       : u in B] : v in B]) where cc := [Coefficients(a) : a in Coefficients(g)];
         return M;
     end function;
-    return [*mat(fp1s[s+1], s, Bds[s+1], p) : s in [0..e] *];
+    t1 := Cputime();
+    res := [*mat(fp1s[s+1], s, Bds[s+1], p) : s in [0..e] *];
+    vprint ZetaPlaneCurve, 1: "Converting powers to matrices time:", Cputime() - t1;
+    vprint ZetaPlaneCurve, 1: "mats time:", Cputime() - t0;
+    return res;
 end function;
 
 
@@ -172,19 +264,27 @@ function points_trace_formula(f, p, r, e : Ms:=[])
   end if;
 
   missing := MissingPoints(ChangeRing(f,GF(p^r)));
-  vprint ZetaPlaneCurve, 1: "r = ", r;
-  vprint ZetaPlaneCurve, 1: "MissingPoints = ", missing;
+  vprint ZetaPlaneCurve, 2: "r = ", r;
+  vprint ZetaPlaneCurve, 2: "MissingPoints = ", missing;
   formula := (p^r-1)^2*&+[(-1)^s*Binomial(e,s)*Trace(Ms[s+1]^r):s in [0..e]];
-  vprint ZetaPlaneCurve, 1: "Trace sum = ", formula;
-  vprint ZetaPlaneCurve, 1: "total = ", missing + formula;
+  vprint ZetaPlaneCurve, 2: "Trace sum = ", formula;
+  vprint ZetaPlaneCurve, 2: "total = ", missing + formula;
   return missing + formula;
 end function;
 
+
+
 // Computes the zeta function of f(x,y,z) = 0 over Fp
-intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
+intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10) -> RngUPolElt
 {
-  The L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in P^2_Q, where C has at most nodal singularities.
-  The L-polynomial is obtained by point counts of normalisation, deduced from the point counts on the plane model obtained via Harvey's trace formula, Theorem 3.1 in "Computing zeta functions of arithmetic schemes". where the matrices are computed in a naive fashion.
+  The L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in P^2_Q.
+  If a factor of the polynomial is known it can be added as KnownFactor.
+  If the point difference between the singular model and its normalisation is know, it can passed as Corrections;
+  If the curve is not nodal, we will attempt to find a new nodal model. The maximum number of attempts to find such a model can be cassed via NewModelTries.
+
+  The L-polynomial is obtained by point counts of the normalisation, by combining:
+    - point counts on the plane model obtained via Harvey's trace formula, Theorem 3.1 in "Computing zeta functions of arithmetic schemes". where the matrices are computed in a naive fashion
+    - corrections by solving singularities, currently only optimised for nodal curves
   }
   R3 := Parent(f);
   require Rank(R3) eq 3 : "f is expected to be a multivariate polynomial in 3 variables";
@@ -197,13 +297,26 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) ->
   if KnownFactor cmpeq false then KnownFactor := PolynomialRing(Integers())!1; end if;
   up_to_r := (2*g - Degree(KnownFactor)) div 2;
   vprint ZetaPlaneCurve, 1: "Using up_to_r = ", up_to_r;
-  if corrections cmpeq false then
-    require IsNodalCurve(C) : "the plane curve C does not have  only nodes as singularities, please provide point counts corrections for the normalisation";
-    corrections := NormalizationCorrections(ChangeRing(f, GF(p)), g);
-  else
-    require #corrections ge up_to_r : "need corrections up to GF(p^" cat IntegerToString(up_to_r) cat ")";
+  if Corrections cmpeq false then
+    if IsNodalCurve(C) then
+      Corrections := NodalCorrections(f, up_to_r);
+    else
+      t0 := Cputime();
+      canmap := CanonicalMap(C);
+      CM := CanonicalImage(C, canmap);
+      vprint ZetaPlaneCurve, 1: "canonical map time: ", Cputime() - t0;
+      newC := FindNewPlaneNodalModel(CM, NewModelTries);
+      if newC cmpeq false then
+        vprint ZetaPlaneCurve, 1: "Could not find nodal model!";
+        Corrections := GenericCorrections(C, CM, up_to_r);
+      else
+        f := R3!DefiningEquation(newC);
+        Corrections := NodalCorrections(f, up_to_r);
+      end if;
+    end if;
+    assert #Corrections ge up_to_r;
   end if;
-  vprint ZetaPlaneCurve, 1: "corrections = ", corrections;
+  vprint ZetaPlaneCurve, 1: "Corrections = ", Corrections;
   // one could decrease 2*g to 2*up_to_r by correcting the point counts with known factor and just computing the unkown factor
   e := Ceiling(Log(p,4*up_to_r*p^(up_to_r/2)));
   e := Max([Ceiling(Log(p,4*up_to_r*p^(r/2)/r)) : r in [1..up_to_r]]);
@@ -214,17 +327,17 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) ->
   KnownFrob := KnownFactor eq 1 select Matrix([[0]]) else CompanionMatrix(Reverse(KnownFactor));
   tmodpe := [
     p^r + 1
-    -Integers()!points_trace_formula(f, p, r, e : Ms:=Ms) 
-    - corrections[r]
+    -Integers()!points_trace_formula(f, p, r, e : Ms:=Ms)
+    - Corrections[r]
     - Trace(KnownFrob^r)
     : r in [1..up_to_r]];
   return TracesToLPolynomial(tmodpe, p, e) * KnownFactor;
 end intrinsic;
 
 
-intrinsic LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
+intrinsic LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10) -> RngUPolElt
 {The L-polynomial of the of the projective normalisation of the curve C defined by the zero locus of f in P^3_GF(p), where C has at most nodal singularities and f in Q[x,y,z].}
- return  LPolynomial(PolynomialRing(GF(p),3)!f: KnownFactor := KnownFactor, corrections := false);
+ return  LPolynomial(PolynomialRing(GF(p),3)!f: KnownFactor:=KnownFactor, Corrections:=Corrections, NewModelTries:=NewModelTries);
 end intrinsic;
 
 
