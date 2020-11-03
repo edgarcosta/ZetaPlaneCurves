@@ -321,7 +321,7 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, Corrections:=false, Ne
   e := Ceiling(Log(p,4*up_to_r*p^(up_to_r/2)));
   e := Max([Ceiling(Log(p,4*up_to_r*p^(r/2)/r)) : r in [1..up_to_r]]);
   vprint ZetaPlaneCurve, 1: "Using prec = ", e;
-  require p gt 1 : "p is too small"; // only implemented the simpler version of the trace formula
+  require p gt 1 + e/up_to_r: "p is too small"; // only implemented the simpler version of the trace formula
   // Compute M_s for s in [0..e]
   Ms := mats(f, p, e);
   KnownFrob := KnownFactor eq 1 select Matrix([[0]]) else CompanionMatrix(Reverse(KnownFactor));
