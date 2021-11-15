@@ -3,7 +3,7 @@ freeze;
 
   ZetaPlaneCurves.
 
-  Computes LPolynomial of plane curves, potentially singular.
+  Compute LPolynomial of a curve via its potentially singular plane model.
 
   Code is based on Theorem 3.1 of D. Harvey's "Computing zeta functions of arithmetic schemes"
 
@@ -11,9 +11,11 @@ freeze;
 
     - LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
     - LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, corrections:=false) -> RngUPolElt
+    - RandomPlaneModel(X::Crv : tries:=100) -> Crv, MapSch
+    - LPolynomialViaPlaneModel(X::Crv[FldFin] : KnownFactor:=false, Corrections:=false, NewModelTries:=10, FindPlaneModelTries:=100) -> RngUPolElt
+    - LPolynomial(X::Crv[FldRat], p::RngIntElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10, FindPlaneModelTries:=100) -> RngUPolElt
 
-
-  Edgar Costa, 2020
+  Edgar Costa, 2020-21
 ***********************************************************************************************/
 
 declare verbose ZetaPlaneCurve, 2;
@@ -107,16 +109,28 @@ end function;
 
 
 // auxiliar functions to find  a new plane model with only nodal singularities
+//return a random point in P
 function RandomPoint(P)
+  //(P::Prj[FldFin]) -> Pt
+  //{return a random point in P}
   affine_chart := Random(Integers(Dimension(P)));
-  return P![i eq affine_chart select 1 else Random(BaseRing(P)) : i in [0..Dimension(P)]];
+  k := BaseRing(P);
+  return P![i eq affine_chart select 1 else Random(k) : i in [0..Dimension(P)]];
 end function;
-function RandomProjection(X)
+
+function RandomProjection(X, tries)
+  // using this over char 0 is quite painful
+  //(X::Sch[FldFin] : tries:=100) -> Sch, MapSch
+  //{return a random projection into lower dimensional projective space witht the same genus}
+  vprint ZetaPlaneCurve, 1: "RandomProjection()";
   P := AmbientSpace(X);
   g := Genus(X);
+  k := BaseRing(P);
+
   newg := -1;
-  for k in [1..100] do
-    Y, proj := Projection(X, RandomPoint(AmbientSpace(X)));
+  for k in [1..tries] do
+    vprint ZetaPlaneCurve, 1: "RandomProjection try = ", k;
+    Y, proj := Projection(X, RandomPoint(P));
     Y := Curve(Y);
     newg := Genus(Y);
     if g eq newg then
@@ -125,14 +139,19 @@ function RandomProjection(X)
   end for;
   return false, false;
 end function;
-function RandomPlaneModel(X)
-  Y, proj := RandomProjection(X);
-  while Dimension(AmbientSpace(Y)) ne 2 do
-    Y, proj0 := RandomProjection(Y);
+
+// using this over char 0 is quite painful
+intrinsic RandomPlaneModel(X::Crv[FldFin] : tries:=100) -> Crv, MapSch
+  {return a plane model for X obtained by a random projection into P2 with the same genus}
+  proj := IdentityMap(AmbientSpace(X));
+  while Dimension(AmbientSpace(X)) ne 2 do
+    vprint ZetaPlaneCurve, 1: "Dimension(AmbientSpace(X)):", Dimension(AmbientSpace(X));
+    X, proj0 := RandomProjection(X, tries);
     proj := proj*proj0;
   end while;
-  return Y, proj;
-end function;
+  return X, proj;
+end intrinsic;
+
 // Find a new plane model with only nodal singularities
 // X should be the image of the canonical map
 function FindNewPlaneNodalModel(X, tries)
@@ -275,17 +294,21 @@ end function;
 
 
 // Computes the zeta function of f(x,y,z) = 0 over Fp
-intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10) -> RngUPolElt
-{
-  The L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in P^2_Q.
+intrinsic LPolynomial(
+  f::RngMPolElt
+  :
+  KnownFactor:=false,
+  Corrections:=false,
+  NewModelTries:=10
+  ) -> RngUPolElt
+  {return the L-polynomial of the projective normalisation of the curve C defined by the zero locus of f in P^2_Q.
   If a factor of the polynomial is known it can be added as KnownFactor.
   If the point difference between the singular model and its normalisation is know, it can passed as Corrections;
   If the curve is not nodal, we will attempt to find a new nodal model. The maximum number of attempts to find such a model can be cassed via NewModelTries.
 
   The L-polynomial is obtained by point counts of the normalisation, by combining:
     - point counts on the plane model obtained via Harvey's trace formula, Theorem 3.1 in "Computing zeta functions of arithmetic schemes". where the matrices are computed in a naive fashion
-    - corrections by solving singularities, currently only optimised for nodal curves
-  }
+    - corrections by solving singularities, currently only optimised for nodal curves}
   R3 := Parent(f);
   require Rank(R3) eq 3 : "f is expected to be a multivariate polynomial in 3 variables";
   require IsPrimeField(BaseRing(R3)) : "curve must be over prime field";
@@ -335,10 +358,59 @@ intrinsic LPolynomial(f::RngMPolElt : KnownFactor:=false, Corrections:=false, Ne
 end intrinsic;
 
 
-intrinsic LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10) -> RngUPolElt
-{The L-polynomial of the of the projective normalisation of the curve C defined by the zero locus of f in P^3_GF(p), where C has at most nodal singularities and f in Q[x,y,z].}
- return  LPolynomial(PolynomialRing(GF(p),3)!f: KnownFactor:=KnownFactor, Corrections:=Corrections, NewModelTries:=NewModelTries);
+intrinsic LPolynomial(
+  f::RngMPolElt,
+  p::RngIntElt
+  :
+  KnownFactor:=false,
+  Corrections:=false,
+  NewModelTries:=10
+  ) -> RngUPolElt
+  {return the L-polynomial of the of the projective normalisation of the curve C defined by the zero locus of f in P^3_GF(p), where C has at most nodal singularities and f in Q[x,y,z].}
+  return  LPolynomial(PolynomialRing(GF(p),3)!f : KnownFactor:=KnownFactor,
+                                                  Corrections:=Corrections,
+                                                  NewModelTries:=NewModelTries);
 end intrinsic;
+
+// different name to not override Magma's intrinsic
+intrinsic LPolynomialViaPlaneModel(
+  X::Crv[FldFin]
+  :
+  KnownFactor:=false,
+  Corrections:=false,
+  NewModelTries:=10,
+  FindPlaneModelTries:=100
+  ) -> RngUPolElt
+  {return the L-polynomial of the of the projective normalisation of the base change C to F_p}
+  vprint ZetaPlaneCurve, 1: "Trying to find plane model";
+  Y := RandomPlaneModel(X : tries:=FindPlaneModelTries);
+  f := DefiningEquation(Y);
+  vprint ZetaPlaneCurve, 1: "Found plane model, defined by:", f;
+  return  LPolynomial(f : KnownFactor:=KnownFactor,
+                          Corrections:=Corrections,
+                          NewModelTries:=NewModelTries);
+end intrinsic;
+
+intrinsic LPolynomial(
+  X::Crv[FldRat],
+  p::RngIntElt
+  :
+  KnownFactor:=false,
+  Corrections:=false,
+  NewModelTries:=10,
+  FindPlaneModelTries:=100) -> RngUPolElt
+  {return the L-polynomial of the of the projective normalisation of the base change C to F_p}
+  vprint ZetaPlaneCurve, 1: "Checking that the genus doesn't drop on reduction";
+  g := Genus(X);
+  Y := ChangeRing(X, GF(p));
+  require Genus(Y) eq g : "the genus drops on reduction modulo p";
+  return LPolynomialViaPlaneModel(Y : KnownFactor:=KnownFactor,
+                                      Corrections:=Corrections,
+                                      NewModelTries:=NewModelTries,
+                                      FindPlaneModelTries:=FindPlaneModelTries);
+end intrinsic;
+
+
 
 
 
