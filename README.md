@@ -6,11 +6,11 @@ The L-polynomial is obtained by point counts of normalisation, deduced from the 
 
 
 This package defines the following intrinsics:
-    - `LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) -> RngUPolElt`
-    - `LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, corrections:=false) -> RngUPolElt`
-    - `RandomPlaneModel(X::Crv : tries:=100) -> Crv, MapSch`
-    - `LPolynomialViaPlaneModel(X::Crv[FldFin] : KnownFactor:=false, Corrections:=false, NewModelTries:=10, FindPlaneModelTries:=100) -> RngUPolElt`
-    - `LPolynomial(X::Crv[FldRat], p::RngIntElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10, FindPlaneModelTries:=100) -> RngUPolElt`
+- `LPolynomial(f::RngMPolElt : KnownFactor:=false, corrections:=false) -> RngUPolElt`
+- `LPolynomial(f::RngMPolElt, p::RngIntElt : KnownFactor:=false, corrections:=false) -> RngUPolElt`
+- `RandomPlaneModel(X::Crv : tries:=100) -> Crv, MapSch`
+- `LPolynomialViaPlaneModel(X::Crv[FldFin] : KnownFactor:=false, Corrections:=false, NewModelTries:=10, FindPlaneModelTries:=100) -> RngUPolElt`
+- `LPolynomial(X::Crv[FldRat], p::RngIntElt : KnownFactor:=false, Corrections:=false, NewModelTries:=10, FindPlaneModelTries:=100) -> RngUPolElt`
 
 
 For genus at least 3 and moderate prime should outperform Magma under generic conditions.
